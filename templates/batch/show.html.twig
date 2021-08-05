@@ -1,0 +1,211 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Batch - {{ batch.name }}{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .form-entry {
+            padding: 15px;
+            border: 1px solid rgba(0,0,0,.125);
+            border-radius: .25rem;
+            margin-bottom: 5px;
+        }
+        .form-entry .form-group {
+            margin: 0;
+        }
+        .overlay {
+            display: none;
+            position: fixed;
+            bottom: 0px;
+            left: 0px;
+            right: 0px;
+            top: 0px;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(43,37,35,.86);
+            z-index: 50;
+        }
+        .loading-container {
+            background-color: white;
+            border-radius: 5px;
+            position: fixed;
+            width: 50px;
+            height: 50px;
+            left: 0;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            margin: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <div>
+        <div class="overlay text-center" id="loading" style="display: none">
+            <div class="loading-container">
+                <i class="fa fa-spinner fa-pulse" style="font-size: 25px"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-sm-4">
+            <a href="{{ path('batch_clear', {id: batch.id}) }}" class="btn btn-block btn-danger mb-2" onclick="return confirm('Are you sure you want to reset servers?');">Reset servers</a>
+            <div class="card mb-3">
+                <div class="card-header d-flex justify-content-between">
+                    <span>Edit batch</span>
+                </div>
+                <div class="card-body">
+                    {{ form_start(form) }}
+                    {{ form_widget(form) }}
+                    <button class="btn btn-block btn-info">{{ button_label|default('Save') }}</button>
+                    {{ form_end(form) }}
+                </div>
+            </div>
+            {{ include('batch/servers_card.html.twig') }}
+        </div>
+        <div class="col-sm-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between">
+                    <span>Campaigns</span>
+                    <a href="{{ path('batch_index') }}" id="{{batch.category}}" class="goBackToBatches">Go back to Batches</a>
+                </div>
+                <div class="card-body">
+                    <div class="accordion" id="campaignList">
+                        {% for campaign in batch.campaigns %}
+                            <div class="card">
+                                <div class="card-header" id="headingOne">
+                                    <h2 class="mb-0 d-flex justify-content-between">
+                                        <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapse-{{ loop.index }}">
+                                            Campaign #{{ loop.index }} ({{ campaign.speed }} per hour)
+                                        </button>
+                                        <div>
+                                            {% if campaign.campaignContent is null %}
+                                                <a href="{{ path('campaign_content_new_single', {id: campaign.id}) }}" class="btn btn-sm btn-info">Add content</a>
+                                            {% else %}
+                                                <a href="{{ path('campaign_content_delete', {id: campaign.id}) }}" class="btn btn-sm btn-danger">Delete</a>
+                                            {% endif %}
+                                        </div>
+                                    </h2>
+                                </div>
+                                <div id="collapse-{{ loop.index }}" class="collapse" data-parent="#campaignList">
+                                    <div class="card-body">
+                                        {% if campaign.campaignContent is not null %}
+                                            <b>From name: </b>{{ campaign.campaignContent.fromName }}<br>
+                                            <b>Subject line: </b>{{ campaign.campaignContent.subjectLine }}<br>
+                                            <a target="_blank" href="{{ path('campaign_content_show', {id: campaign.campaignContent.id}) }}">View template</a><br>
+                                        {% endif %}
+                                        <b>Hourly quota: </b>{{ campaign.speed }}<br>
+                                        <b>Contact List: </b>{{ campaign.batch.contactList.name }}
+
+                                        {% set resendAllAvailable = 0 %}
+                                        {% set deletableServers = 0 %}
+                                        {% for task in campaign.tasks %}
+                                            {% if task.status == "sent" and task.resent == false and task.server.dead != 1 %}
+                                                {% set resendAllAvailable = resendAllAvailable + 1 %}
+                                            {% endif %}
+                                            {% if task.server.dead == 1 or task.progress >= 30 and task.opens == 0 %}
+                                                {% set deletableServers = deletableServers + 1 %}
+                                            {% endif %}
+                                        {% endfor %}
+
+                                        <div class="float-right">
+                                            {% if deletableServers != 0 %}
+                                                <button id="checkedButton" class="btn btn-danger btn-sm mr-2" disabled>Delete selected servers</button>
+                                            {% endif %}
+                                            {% if resendAllAvailable != 0 %}
+                                                <a href="{{ path('resend_all_available_tasks', {'id': campaign.id})}}">
+                                                    <button class="btn btn-primary btn-sm mr-2">Resend all available</button>
+                                                </a>
+                                            {% endif %}
+                                        </div>
+
+                                        <table class="table table-bordered mt-3">
+                                            <thead>
+                                            <tr>
+                                                <td>IP</td>
+                                                <td>Import status</td>
+                                                <td>Campaign status</td>
+                                                <td>Opens</td>
+                                                <td>Bounces</td>
+                                                {% if resendAllAvailable != 0 %}
+                                                    <td>Resend</td>
+                                                {% endif %}
+                                                {% if deletableServers != 0 %}
+                                                    <td>Delete</td>
+                                                {% endif %}
+                                            </tr>
+                                            </thead>
+                                            <tbody>
+                                            {% for task in campaign.tasks %}
+                                                <tr>
+                                                    <td>{{ task.server.ip }}</td>
+                                                    <td>
+                                                        {% if task.import.progress == -1 %}
+                                                            not started
+                                                        {% elseif task.import.progress == 100 %}
+                                                            completed
+                                                        {% else %}
+                                                            importing ({{ task.import.progress }}%)
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>
+                                                        {% if task.server.dead == 0 %}
+                                                            {% if task.status == 'waiting' %}
+                                                                waiting for import
+                                                            {% elseif task.status == 'sending' %}
+                                                                sending ({{ task.progress }}%)
+                                                            {% elseif task.status == 'sent' %}
+                                                                sent
+                                                            {% endif %}
+                                                        {% elseif task.server.dead == 1 %}
+                                                            SERVER DEAD
+                                                        {% endif %}
+                                                    </td>
+                                                    {% if (task.sent > 0) %}
+                                                        <td>
+                                                            <a title="Download Opens" target="_blank" href="{{ path('batch_download_opens', {id: task.id}) }}">
+                                                                {{ task.opens }} ({{ (task.opens / task.sent * 100)|round(2, 'floor') }}%)
+                                                            </a>
+                                                        </td>
+                                                        <td>
+                                                            <a title="Download Bounces" target="_blank" href="{{ path('batch_download_bounces', {id: task.id}) }}">
+                                                                {{ task.bounces }} ({{ (task.bounces / task.sent * 100)|round(2, 'floor') }}%)
+                                                            </a>
+                                                        </td>
+                                                    {% else %}
+                                                        <td>0</td>
+                                                        <td>0</td>
+                                                    {% endif %}
+                                                    {% if resendAllAvailable != 0 %}
+                                                        <td>
+                                                            {% if task.status == "sent" and task.resent == false and task.server.dead != 1 %}
+                                                                <a href="{{ path('resend_campaign', {id: task.id}) }}" class="btn btn-sm btn-primary">Resend</a>
+                                                            {% endif %}
+                                                        </td>
+                                                    {% endif %}
+                                                    {% if deletableServers != 0 %}
+                                                        <td class="text-center">
+                                                            <input type="checkbox" class="deleteCheck" id="{{ task.id }}">
+                                                        </td>
+                                                    {% endif %}
+                                                </tr>
+                                            {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <a href="{{ path('campaign_content_new_batch', {id: batch.id}) }}" class="btn btn-block btn-info mt-3">Add content to all</a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

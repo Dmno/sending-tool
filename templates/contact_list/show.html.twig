@@ -1,0 +1,66 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}List - {{ contact_list.name }}{% endblock %}
+
+{% block body %}
+    {% set showColumns = false %}
+    {% for contact in contacts %}
+        {% if contact.Id is defined %}
+            {% set showColumns = true %}
+        {% endif %}
+    {% endfor %}
+
+    <div class="row">
+        <div class="col-sm-4">
+            <div class="card">
+                <div class="card-header">
+                    Edit list
+                </div>
+                <div class="card-body">
+                    {{ include('contact_list/_form.html.twig') }}
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between">
+                    <span>{{ contact_list.name }}</span>
+                    <a href="{{ path('contact_list_index') }}">Go back to Lists</a>
+                </div>
+                <div class="card-body">
+                    <table class="table table-bordered table-hover">
+                        <thead>
+                        <tr>
+                            {% if showColumns != false %}
+                                <th>Id</th>
+                            {% endif %}
+                            <th>Email</th>
+                            <th>First Name</th>
+                            <th>Last Name</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for contact in contacts %}
+                            <tr>
+                                {% if showColumns != false %}
+                                    <td>{{ contact.Id }}</td>
+                                {% endif %}
+                                <td>{{ contact['Email'] }}</td>
+                                <td>{{ contact['First Name'] }}</td>
+                                <td>{{ contact['Last Name'] }}</td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="3">no records found</td>
+                            </tr>
+                        {% endfor %}
+                        <tr>
+                            <td colspan="3" style="text-align: center">...</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

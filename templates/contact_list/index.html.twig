@@ -1,0 +1,76 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Lists{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        td {
+            vertical-align: middle !important;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <div class="row">
+        <div class="col-sm-4">
+            <div class="card">
+                <div class="card-header">
+                    Create new list
+                </div>
+                <div class="card-body">
+                    {{ include('contact_list/_form.html.twig') }}
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-8">
+            <div class="card">
+                <div class="card-header">
+                    <form>
+                        <label>Lists</label>
+                        {% if locales is not empty %}
+                            <label class="ml-5 mr-2">Filter lists by locale:</label>
+                            <select class="form-control form-control-sm col-md-3" name="locale" onchange="this.form.submit();" style="display: inline-block">
+                                <option value="" hidden>Select a locale</option>
+                                <option value="">All</option>
+                                {% for locale in locales %}
+                                    <option value="{{ locale.title }}">{{ locale.title }}</option>
+                                {% endfor %}
+                            </select>
+                        {% endif %}
+                    </form>
+                </div>
+                <div class="card-body">
+                    <table class="table table-bordered table-hover">
+                        <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Size</th>
+                            <th>User</th>
+                            <th>Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for contact_list in contact_lists %}
+                            <tr>
+                                <td>{{ contact_list.name }}</td>
+                                <td>{{ contact_list.size }}</td>
+                                <td>{{ contact_list.user.name }}</td>
+                                <td style="width: 225px">
+                                    <a href="{{ path('contact_list_show', {id: contact_list.id}) }}" class="btn btn-sm btn-info">View</a>
+                                    <a href="{{ path('contact_list_download', {id: contact_list.id}) }}" class="btn btn-sm btn-info">Download</a>
+                                    {{ include('contact_list/_delete_form.html.twig') }}
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="4">no records found</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Batch - {{ batch.name }}{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .form-entry {
+            padding: 15px;
+            border: 1px solid rgba(0,0,0,.125);
+            border-radius: .25rem;
+            margin-bottom: 5px;
+        }
+        .form-entry .form-group {
+            margin: 0;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <div class="row">
+        <div class="col-sm-4">
+            {{ include('batch/servers_card.html.twig') }}
+        </div>
+        <div class="col-sm-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between">
+                    <span>Finish setup</span>
+                    <a href="{{ path('batch_index') }}">Go back to Batches</a>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger">No warmup plans available! Please go to <a href="{{ path('warmup_plan_index') }}">Warmup plans</a>.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

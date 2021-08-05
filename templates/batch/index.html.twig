@@ -1,0 +1,133 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Batches{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        td {
+            vertical-align: middle !important;
+        }
+        .category {
+            width: 100%;
+            background-color: #f7f7f7;
+            border: 1px solid rgba(0,0,0,.125);
+            cursor: pointer;
+        }
+        .category-title {
+            padding: 10px;
+            margin: 0;
+            font-size: 20px;
+        }
+
+        .category {
+            position: relative;
+        }
+
+        .category::after {
+            content: "\f107";
+            color: black;
+            top: 20%;
+            font-size: 20px;
+            right: 25px;
+            position: absolute;
+            font-family: "FontAwesome"
+        }
+
+        .category[aria-expanded="true"]::after {
+            content: "\f106";
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <div class="row">
+        <div class="col-sm-4">
+            <div class="card">
+                <div class="card-header">
+                    Create new batch
+                </div>
+                <div class="card-body">
+                    {{ include('batch/_form_new.html.twig') }}
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-8">
+            <div class="card">
+                <div class="card-header">
+                    Batches
+                </div>
+                <button class="btn btn-primary show-all-batches" style="margin: 10px;" data-toggle="collapse" data-target=".hidden-batch">Toggle Batch visibility</button>
+                <div class="card-body">
+                    {% set exists = false %}
+                    {% for category in categories %}
+                        {% for batch in batches %}
+                            {% if batch.category == category.title %}
+                                {% set exists = true %}
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if exists == true %}
+                            <div class="category" data-toggle="collapse" data-target="#batches-{{ category.title}}">
+                                <p class="category-title">{{ category.title }}</p>
+                            </div>
+                            <div class="hidden-batch collapse" id="batches-{{ category.title}}">
+                                {% include 'batch/category_table.html.twig' with {'category': category.title} %}
+                            </div>
+                        {% endif %}
+                        {% set exists = false %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascripts%}
+    {{ parent() }}
+    <script>
+        let batch = sessionStorage.getItem('batch');
+
+        if (batch) {
+            $('#batches-'+ batch).addClass("show");
+            sessionStorage.removeItem('batch');
+        }
+
+        $('.csv-data-input').on("change input paste keyup", function () {
+            var data = $('.csv-data-input').val();
+            var rows = data.split("\n");
+            var valid = true;
+
+            var table = $('<table class="table table-bordered table-striped" />');
+
+            for(var y in rows) {
+                var cells = rows[y].split("\t");
+                var row = $('<tr />');
+                if ((!ValidateIPaddress(cells[0])) || (cells.length !== 1)) {
+                    valid = false;
+                }
+                for(var x in cells) {
+                    row.append('<td>'+cells[x]+'</td>');
+                }
+                table.append(row);
+            }
+
+            if (valid) {
+                $('#csv-table').html(table);
+                $('.submit').attr("disabled", false);
+            }
+            else {
+                $('#csv-table').html("<div class='alert alert-danger'>Provided data is not valid.</div>");
+                $('.submit').attr("disabled", true);
+            }
+        });
+
+        function ValidateIPaddress(ipaddress) {
+            if (/^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(ipaddress)) {
+                return (true)
+            }
+            return (false)
+        }
+    </script>
+
+{% endblock %}

@@ -1,0 +1,98 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Warmup plans{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        td {
+            vertical-align: middle !important;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <div class="row">
+        <div class="col-sm-4">
+            <div class="card">
+                <div class="card-header">
+                    Create new warmup plan
+                </div>
+                <div class="card-body">
+                    {{ include('warmup_plan/_form.html.twig') }}
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-8">
+            <div class="card">
+                <div class="card-header">
+                    Lists
+                </div>
+                <div class="card-body">
+                    <table class="table table-bordered table-hover">
+                        <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th># of days</th>
+                            <th>User</th>
+                            <th>Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for warmupPlan in warmupPlans %}
+                            <tr>
+                                <td>{{ warmupPlan.name }}</td>
+                                <td>{{ warmupPlan.plan|length }}</td>
+                                <td>{{ warmupPlan.user.name }}</td>
+                                <td style="width: 140px">
+                                    <a href="{{ path('warmup_plan_show', {id: warmupPlan.id}) }}" class="btn btn-sm btn-info">View</a>
+                                    {{ include('warmup_plan/_delete_form.html.twig') }}
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="4">no records found</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascripts%}
+    {{ parent() }}
+    <script>
+        $('.csv-data-input').on("change input paste keyup", function () {
+            var data = $('.csv-data-input').val();
+            var rows = data.split(",");
+            var valid = true;
+
+            var table = $('<table class="table table-bordered table-striped" />');
+
+            var i = 1;
+            for(var y in rows) {
+                var cell = rows[y];
+                var row = $('<tr />');
+                if ((parseInt(cell) < 0) || (isNaN(parseInt(cell))) || (parseInt(cell).toString().length !== cell.length)) {
+                    valid = false;
+                }
+                row.append('<td>Day ' + i++ + '</td>');
+                row.append('<td>'+parseInt(cell)+'</td>');
+                table.append(row);
+            }
+
+            if (valid) {
+                $('#csv-table').html(table);
+                $('.submit').attr("disabled", false);
+            }
+            else {
+                $('#csv-table').html("<div class='alert alert-danger'>Provided data is not valid.</div>");
+                $('.submit').attr("disabled", true);
+            }
+        });
+    </script>
+
+{% endblock %}
